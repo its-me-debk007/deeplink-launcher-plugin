@@ -1,18 +1,25 @@
 package com.github.itsmedebk007.deeplinklauncherplugin.toolWindow
 
+import com.android.ddmlib.IDevice
+import com.android.tools.idea.wearpairing.runShellCommand
 import com.github.itsmedebk007.deeplinklauncherplugin.services.MyProjectService
 import com.github.itsmedebk007.deeplinklauncherplugin.util.NotificationUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.ContentFactory
 import com.intellij.util.ui.UIUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.jetbrains.android.sdk.AndroidSdkUtils
 import java.awt.Font
+import java.awt.event.ItemEvent
 import javax.swing.JButton
 
 class MyToolWindowFactory : ToolWindowFactory {
@@ -28,6 +35,7 @@ class MyToolWindowFactory : ToolWindowFactory {
     class MyToolWindow(private val toolWindow: ToolWindow) {
 
         private val service = toolWindow.project.service<MyProjectService>()
+        private val devicesList = mutableListOf<IDevice>()
 
         fun getContent() = JBPanel<JBPanel<*>>().apply {
             val heading = JBLabel("Enter deeplink here").apply {
@@ -39,6 +47,13 @@ class MyToolWindowFactory : ToolWindowFactory {
                 addActionListener {
 //                    val facets = ProjectFacetManager.getInstance(toolWindow.project).getFacets(AndroidFacet.ID)
 //                    val packageName = AndroidModel.get(facets[0])?.applicationId
+
+                    val coroutineScope = CoroutineScope(Dispatchers.IO)
+                    coroutineScope.launch {
+                        devicesList.forEach { device ->
+                            device.runShellCommand("am start -a android.intent.action.VIEW -d \"${textField.text}\"")
+                        }
+                    }
 
                     NotificationUtil.showInfoNotification("Deeplink launched successfully")
                 }
@@ -52,13 +67,16 @@ class MyToolWindowFactory : ToolWindowFactory {
 
             adb?.let {
                 it.devices.forEach { device ->
-                    val button = JButton(device.name)
-                    add(button)
+                    val deviceCheckbox = JBCheckBox(device.name).apply {
+                        isSelected = true
+                        devicesList.add(device)
 
-//                    val coroutineScope = CoroutineScope(Dispatchers.IO)
-//                    coroutineScope.launch {
-//                        device.runShellCommand("am start -a android.intent.action.VIEW -d \"${textField.text}\"")
-//                    }
+                        addItemListener { event ->
+                            if (event.stateChange == ItemEvent.SELECTED) devicesList.add(device)
+                            else devicesList.remove(device)
+                        }
+                    }
+                    add(deviceCheckbox)
                 }
             }
         }
