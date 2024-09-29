@@ -43,6 +43,10 @@ dependencies {
         // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
         plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
 
+//        plugin("org.jetbrains.android:242.22855.74")
+//        androidStudio("241.19072.14")
+        plugin("org.jetbrains.android:233.14808.21")
+
         instrumentationTools()
         pluginVerifier()
         zipSigner()
