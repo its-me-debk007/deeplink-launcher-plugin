@@ -2,7 +2,7 @@ package com.github.itsmedebk007.deeplinklauncherplugin.toolWindow
 
 import com.android.ddmlib.IDevice
 import com.android.tools.idea.wearpairing.runShellCommand
-import com.github.itsmedebk007.deeplinklauncherplugin.services.MyProjectService
+import com.github.itsmedebk007.deeplinklauncherplugin.services.DataPersistentComponent
 import com.github.itsmedebk007.deeplinklauncherplugin.util.NotificationUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.android.sdk.AndroidSdkUtils
 import java.awt.Font
 import java.awt.event.ItemEvent
+import java.net.URI
 import javax.swing.JButton
 
 class MyToolWindowFactory : ToolWindowFactory {
@@ -34,28 +35,24 @@ class MyToolWindowFactory : ToolWindowFactory {
 
     class MyToolWindow(private val toolWindow: ToolWindow) {
 
-        private val service = toolWindow.project.service<MyProjectService>()
+        private val dataPersistentComponent = toolWindow.project.service<DataPersistentComponent>()
         private val devicesList = mutableListOf<IDevice>()
 
         fun getContent() = JBPanel<JBPanel<*>>().apply {
+            val deeplinkList = dataPersistentComponent.state
+
             val heading = JBLabel("Enter deeplink here").apply {
-                this.font = this.font.deriveFont(Font.BOLD)
-                this.fontColor = UIUtil.FontColor.BRIGHTER
+                font = font.deriveFont(Font.BOLD)
+                fontColor = UIUtil.FontColor.BRIGHTER
             }
             val textField = JBTextField(20)
             val button = JButton("Launch").apply {
                 addActionListener {
 //                    val facets = ProjectFacetManager.getInstance(toolWindow.project).getFacets(AndroidFacet.ID)
 //                    val packageName = AndroidModel.get(facets[0])?.applicationId
-
-                    val coroutineScope = CoroutineScope(Dispatchers.IO)
-                    coroutineScope.launch {
-                        devicesList.forEach { device ->
-                            device.runShellCommand("am start -a android.intent.action.VIEW -d \"${textField.text}\"")
-                        }
-                    }
-
-                    NotificationUtil.showInfoNotification("Deeplink launched successfully")
+                    devicesList.launchDeepLink(textField.text)
+                    deeplinkList.deeplinks.add(textField.text)
+                    dataPersistentComponent.loadState(deeplinkList)
                 }
             }
 
@@ -78,6 +75,35 @@ class MyToolWindowFactory : ToolWindowFactory {
                     }
                     add(deviceCheckbox)
                 }
+            }
+
+            dataPersistentComponent.state.deeplinks.forEach { deeplink ->
+                val deeplinkBtn = JButton(deeplink).apply {
+                    addActionListener {
+                        devicesList.launchDeepLink(deeplink)
+                    }
+                }
+
+                add(deeplinkBtn)
+            }
+        }
+
+        private fun List<IDevice>.launchDeepLink(deeplink: String) {
+            if (deeplink.isBlank()) return
+
+            runCatching { URI(deeplink.trim()) }
+                .onFailure {
+                    NotificationUtil.showErrorNotification("Incorrect deeplink")
+                    return
+                }
+
+            val coroutineScope = CoroutineScope(Dispatchers.IO)
+            coroutineScope.launch {
+                this@launchDeepLink.forEach { device ->
+                    device.runShellCommand("am start -a android.intent.action.VIEW -d \"${deeplink.trim()}\"")
+                }
+
+                NotificationUtil.showInfoNotification("Deeplink launched successfully")
             }
         }
     }

@@ -18,4 +18,13 @@ object NotificationUtil {
         )
         notification.notify(null)
     }
+
+    fun showErrorNotification(message: String) {
+        val notification = notificationGroup.createNotification(
+            title = TITLE,
+            content = message,
+            type = NotificationType.ERROR
+        )
+        notification.notify(null)
+    }
 }
