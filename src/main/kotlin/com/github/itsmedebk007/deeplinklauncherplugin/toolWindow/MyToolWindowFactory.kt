@@ -115,18 +115,15 @@ class MyToolWindowFactory : ToolWindowFactory, DumbAware {
 
             runCatching { URI(deeplink.trim()) }
                 .onFailure {
-                    NotificationUtil.showErrorNotification("Incorrect deeplink")
+                    onFailure()
                     return
                 }
 
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            coroutineScope.launch {
-                this@launchDeepLink.forEach { device ->
-                    device.runShellCommand("am start -a android.intent.action.VIEW -d \"${deeplink.trim()}\"")
-                }
-
-                NotificationUtil.showInfoNotification("Deeplink launched successfully")
+            this@launchDeepLink.forEach { device ->
+                device.runShellCommand("am start -a android.intent.action.VIEW -d \"${deeplink.trim()}\"")
             }
+
+            onSuccess()
         }
     }
 }
