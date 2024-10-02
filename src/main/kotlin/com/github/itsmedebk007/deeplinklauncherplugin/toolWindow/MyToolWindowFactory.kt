@@ -22,6 +22,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.jetbrains.android.sdk.AndroidSdkUtils
+import java.awt.FlowLayout
 import java.awt.Font
 import java.awt.event.ItemEvent
 import java.net.URI
@@ -39,7 +40,8 @@ class MyToolWindowFactory : ToolWindowFactory, DumbAware {
 
     class MyToolWindow(private val toolWindow: ToolWindow) {
 
-        private val dataPersistentComponent = toolWindow.project.service<DataPersistentComponent>()
+        private val dataPersistentComponent by lazy { toolWindow.project.service<DataPersistentComponent>() }
+        val adb by lazy { AndroidSdkUtils.getDebugBridge(toolWindow.project) }
         private val devicesList = mutableListOf<IDevice>()
 
         fun getContent() = JBPanel<JBPanel<*>>(FlowLayout(FlowLayout.LEFT)).apply {
@@ -50,9 +52,8 @@ class MyToolWindowFactory : ToolWindowFactory, DumbAware {
 
             val deeplinkList = dataPersistentComponent.state
 
-            val heading = JBLabel("Enter deeplink here").apply {
+            val heading = JBLabel("Enter deeplink below:").apply {
                 font = font.deriveFont(Font.BOLD)
-                fontColor = UIUtil.FontColor.BRIGHTER
             }
             val textField = JBTextField(20)
             val button = JButton("Launch").apply {
@@ -82,8 +83,6 @@ class MyToolWindowFactory : ToolWindowFactory, DumbAware {
             add(heading)
             add(textField)
             add(button)
-
-            val adb = AndroidSdkUtils.getDebugBridge(toolWindow.project)
 
             adb?.let {
                 it.devices.forEach { device ->
