@@ -5,14 +5,21 @@
     <vendor>its-me-debk007</vendor>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.android</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.itsmedebk007.deeplinklauncherplugin.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <toolWindow factoryClass="com.github.itsmedebk007.deeplinklauncherplugin.toolWindow.MyToolWindowFactory"
+                    id="Deeplink Launcher"/>
     </extensions>
 
     <applicationListeners>
-        <listener class="com.github.itsmedebk007.deeplinklauncherplugin.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+        <listener class="com.github.itsmedebk007.deeplinklauncherplugin.listeners.MyApplicationActivationListener"
+                  topic="com.intellij.openapi.application.ApplicationActivationListener"/>
     </applicationListeners>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="DEEPLINK_LAUNCHER_GROUP" displayType="BALLOON"/>
+    </extensions>
 </idea-plugin>
